@@ -141,6 +141,7 @@ def main():
     df = collect_pitch_level_data(start= '2023-03-30',end= '2023-10-01')
     print(1)
     game_data = collect_game_level_data(df)
+    print(1.5)
     batting_home_lineup, batting_away_lineup = get_player_game_batting(df, savefile= False)
     print(2)
     # Batter stats for every game
