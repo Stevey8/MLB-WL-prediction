@@ -39,6 +39,13 @@ def get_away_batting_order(group):
     away_b_dict = {f'away_b{i+1}':away_batters[i] for i in range(9)}
     return pd.Series(away_b_dict)
 
+def get_home_batting_order(group):
+    """
+    Gets the batting order for the home team from a group of pitch-by-pitch data.
+    """
+    home_batters = group.loc[group['inning_topbot'] == 'Bot', 'batter'].unique()[:9]
+    home_b_dict = {f'home_b{i+1}':home_batters[i] for i in range(9)}
+    return pd.Series(home_b_dict)
 
 def get_batting_metrics(group):
     ab_events = ['single', 'double', 'triple', 'home_run', 'strikeout', 'field_out', 
@@ -64,14 +71,6 @@ def get_batting_metrics(group):
         'hr': home_run_count,
         'sf': sac_fly_count
     })
-
-def get_home_batting_order(group):
-    """
-    Gets the batting order for the home team from a group of pitch-by-pitch data.
-    """
-    home_batters = group.loc[group['inning_topbot'] == 'Bot', 'batter'].unique()[:9]
-    home_b_dict = {f'home_b{i+1}':home_batters[i] for i in range(9)}
-    return pd.Series(home_b_dict)
 
 def group_by_game(df):
     """
@@ -188,15 +187,20 @@ def add_prev_game_stats(games, prev_games, N, batter_games_stats):
     """
     Adds previous game statistics to game-level data.
     """
+    # Make table of all games with home and away teams previous 10 games
     games = games.merge(prev_games, how="left", left_on=["game_pk","home_team"], right_on=["game_pk","team"], suffixes=("", "_home"))
     games = games.merge(prev_games, how="left", left_on=["game_pk","away_team"], right_on=["game_pk","team"], suffixes=("", "_away"))
+
+
     for i in range(N):
         home_team_col = f"prev_{i+1}_game_pk"
         away_team_col = f"prev_{i+1}_game_pk_away"
+
         # Add home_team stats
         games = games.merge(batter_games_stats, how="left", left_on= [home_team_col , "home_team"], right_on= ["game_pk", "team"], suffixes=("",f"_{i+1}"))
         # Add away_team stats
         games = games.merge(batter_games_stats, how="left", left_on= [away_team_col , "away_team"], right_on= ["game_pk", "team"], suffixes=("",f"_away_{i+1}"))
+    
     games = games.drop(columns = ["team","away_b1", "away_b2", "away_b3", "away_b4", "away_b5", "away_b6", "away_b7", "away_b8", "away_b9", "home_b1", "home_b2", "home_b3", "home_b4", "home_b5", "home_b6", "home_b7", "home_b8", "home_b9", "date_home", "date_away","prev_1_game_pk", "prev_2_game_pk", "prev_3_game_pk", "prev_4_game_pk", "prev_5_game_pk", "prev_6_game_pk", "prev_7_game_pk", "prev_8_game_pk", "prev_9_game_pk", "prev_10_game_pk", "date_away", "team_away", "prev_1_game_pk_away", "prev_2_game_pk_away", "prev_3_game_pk_away", "prev_4_game_pk_away", "prev_5_game_pk_away", "prev_6_game_pk_away", "prev_7_game_pk_away", "prev_8_game_pk_away", "prev_9_game_pk_away", "prev_10_game_pk_away"])
         
     for i in range(N):
@@ -213,6 +217,7 @@ def main():
     YEAR = 2022
     START_DATE = f'{YEAR}-04-07'
     END_DATE = f'{YEAR}-10-05'
+
     # Get pitch level data
     df = collect_pitch_level_data(start= START_DATE,end= END_DATE)
 
