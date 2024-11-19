@@ -43,7 +43,9 @@ def collect_pitch_data(start, end, filename = "", save_file = False):
 
 
 def main():
-    pass
+    pitches = collect_pitch_data("2023-03-30", "2023-10-01", save_file = False)
+    
+    return
 
 
 if __name__ == "__main__":
