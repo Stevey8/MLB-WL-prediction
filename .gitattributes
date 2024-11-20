@@ -1,0 +1,2 @@
+*.csv filter=lfs diff=lfs merge=lfs -text
+data_2014_to_2024/*.csv filter=lfs diff=lfs merge=lfs -text
