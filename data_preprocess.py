@@ -46,6 +46,24 @@ def get_game_level_data_with_batters(df, data_without_batters):
     return data_with_batters
 
 def get_previous_n_batter_games(results, n, filename = "", save_file = False):
+    """
+    Gets the previous N games for each batter in the dataset.
+
+    This function takes game results and finds the previous N games for each batter,
+    tracking games chronologically by date. It creates columns containing the game IDs
+    for the previous N appearances for each batter while with a specific team.
+
+    Args:
+        results (pd.DataFrame): Dataframe containing game results and batter information
+        n (int): Number of previous games to track for each batter
+        filename (str, optional): Path to save the output DataFrame. Defaults to empty string.
+        save_file (bool, optional): Whether to save the DataFrame to a file. Defaults to False.
+
+    Returns:
+        pd.DataFrame: DataFrame containing game IDs and previous N game IDs for each batter,
+                     with columns ['team', 'date', 'game_pk', 'prev_1_game_pk', 
+                     'prev_2_game_pk', etc.]
+    """
     home_teams, away_teams = results.copy(), results.copy()
 
 
@@ -71,6 +89,24 @@ def get_previous_n_batter_games(results, n, filename = "", save_file = False):
     return games
 
 def get_previous_n_pitcher_games(results, n, filename = "", save_file = False):
+    """
+    Gets the previous N games for each pitcher in the dataset.
+
+    This function takes game results and finds the previous N games for each pitcher,
+    tracking games chronologically by date. It creates columns containing the game IDs
+    for the previous N appearances for each pitcher while with a specific team.
+
+    Args:
+        results (pd.DataFrame): Dataframe containing game results and pitcher information
+        n (int): Number of previous games to track for each pitcher
+        filename (str, optional): Path to save the output DataFrame. Defaults to empty string.
+        save_file (bool, optional): Whether to save the DataFrame to a file. Defaults to False.
+
+    Returns:
+        pd.DataFrame: DataFrame containing game IDs and previous N game IDs for each pitcher,
+                     with columns ['team', 'date', 'game_pk', 'pitcher', 'prev_1_game_pk', 
+                     'prev_2_game_pk', etc.]
+    """
     home_teams, away_teams = results.copy(), results.copy()
 
 
@@ -102,6 +138,24 @@ def get_previous_n_pitcher_games(results, n, filename = "", save_file = False):
 
 
 def add_prev_game_stats(games, batter_stats, pitcher_stats, prev_batter_games, prev_pitcher_games, N):
+    """
+    Adds previous game statistics for both batters and pitchers to the games dataframe.
+
+    This function merges previous game statistics for both batters and pitchers with the main games
+    dataframe. It uses the previous game IDs to look up historical statistics and adds them as new
+    columns with appropriate suffixes to indicate which team (home/away) and how many games back.
+
+    Args:
+        games (pd.DataFrame): Main dataframe containing game information and IDs
+        batter_stats (pd.DataFrame): Dataframe containing batter statistics by game
+        pitcher_stats (pd.DataFrame): Dataframe containing pitcher statistics by game  
+        prev_batter_games (pd.DataFrame): Dataframe mapping games to previous batter games
+        prev_pitcher_games (pd.DataFrame): Dataframe mapping games to previous pitcher games
+        N (int): Number of previous games to include statistics for
+
+    Returns:
+        pd.DataFrame: Original games dataframe augmented with historical batter and pitcher statistics
+    """
     # Reshape batter stats
     batter_stats.drop(columns=['Unnamed: 0', 'game_sequence','batter'], inplace=True)
     df_transformed = batter_stats.melt(id_vars=['game_pk', 'team','batting_order'], var_name='stat', value_name='value')
@@ -134,8 +188,8 @@ def add_prev_game_stats(games, batter_stats, pitcher_stats, prev_batter_games, p
         "prev_7_game_pk":"prev_7_game_pk_home_batter",
         "prev_8_game_pk":"prev_8_game_pk_home_batter",
         "prev_9_game_pk":"prev_9_game_pk_home_batter",
-        "prev_10_game_pk":"prev_10_game_pk_home_batter"
-    }, inplace=True)
+        "prev_10_game_pk":"prev_10_game_pk_home_batter"}
+        , inplace=True)
 
     for i in range(N):
         home_team_col = f"prev_{i+1}_game_pk_home_batter"
@@ -153,19 +207,15 @@ def add_prev_game_stats(games, batter_stats, pitcher_stats, prev_batter_games, p
         away_key_cols = [away_team_col, "away_team"]
 
                
-        # Add home_team pitcher stats
-        games = games.merge(pitcher_stats[["game_pk", "team","is_host", "n_pitches", "ip", "er", "k", "bb", "h"]], how="left", left_on= home_key_cols, right_on= ["game_pk", "team"], suffixes=("",f"_home_pitcher_{i+1}"))
-        # Add away_team pitcher stats
-        games = games.merge(pitcher_stats[["game_pk", "team","is_host", "n_pitches", "ip", "er", "k", "bb", "h"]], how="left", left_on= away_key_cols, right_on= ["game_pk", "team"], suffixes=("",f"_away_pitcher_{i+1}"))
-    
-    #games.drop(columns=["Unamed: 0"], inplace=True)
-    
+        # Add pitcher stats
+        games = games.merge(pitcher_stats[["game_pk", "team","is-host", "n-pitches", "ip", "er", "k", "bb", "h"]], how="left", left_on= home_key_cols, right_on= ["game_pk", "team"], suffixes=("",f"_pitcher_home_{i+1}"))
+        games = games.merge(pitcher_stats[["game_pk", "team","is-host", "n-pitches", "ip", "er", "k", "bb", "h"]], how="left", left_on= away_key_cols, right_on= ["game_pk", "team"], suffixes=("",f"_pitcher_away_{i+1}"))
     return games
 
 
 
 def main():
-    years = [2014, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023]
+    years = [2014, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024]
     
     for year in years:
         print(f"Processing year {year}")
@@ -176,7 +226,7 @@ def main():
 
         batter_data = pd.read_csv(f"data/df_{year}_batting_stats.csv")
         pitcher_data = pd.read_csv(f"data/df_{year}_pitching_stats.csv")
-        pitcher_data.rename(columns = {'is_home': 'is_host'}, inplace = True)
+        pitcher_data.rename(columns = {'is_home': 'is-host','n_pitches': 'n-pitches'}, inplace = True)
 
 
         games_with_hist_stats = add_prev_game_stats(game_batter_data, batter_data, pitcher_data, prev_batter_games, prev_pitcher_games, 10)

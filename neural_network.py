@@ -24,6 +24,7 @@ class MultiLayerNetwork(nn.Module):
       self.net.append(nn.ReLU())
       self.net.append(nn.Dropout(dropout_prob))
     self.net.append(nn.Linear(h_sz, out_sz))
+    self.net.append(nn.Softmax())
 
 
   def forward(self, x):
@@ -32,34 +33,39 @@ class MultiLayerNetwork(nn.Module):
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Hyper parameters
+    
     SEED = 42
     BATCH_SIZE = 64
-    LR = 0.0001
-    EPOCHS = 450
+    LR = 0.00001
+    EPOCHS = 50
     REPORT = 100
-    IN_SZ = 790
-    H_SZ = 64
+    IN_SZ = 200
+    H_SZ = 250
     OUT_SZ = 2
-    DROPOUT_PROB = 0.8
-    LAYERS = 10
-    torch.manual_seed(SEED);
+    DROPOUT_PROB = 0.5
+    LAYERS = 5
+    torch.manual_seed(SEED)
+    
 
     # Load data
     data_dir = "data/"
-    full_data = pd.read_csv(f"{data_dir}full_training_data.csv")
+    full_data = pd.read_csv(f"{data_dir}full_training_data_ops_era.csv")
     full_data[full_data.select_dtypes(include='bool').columns] = full_data.select_dtypes(include='bool').astype(int)
-
-    X = full_data.iloc[:,:-1]
+    
+    
+    full_data.dropna(inplace=True)
+    
+    X = full_data.iloc[:,1:-1]
     y = full_data.iloc[:,-1:]
 
     X_train_df, X_test_df, y_train_df, y_test_df = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    X_train = torch.Tensor(X_train_df.to_numpy()).to(device)
-    y_train = torch.Tensor(y_train_df.to_numpy()).squeeze().long().to(device)
+    X_train = torch.Tensor(X_train_df.to_numpy())#.to(device)
+    y_train = torch.Tensor(y_train_df.to_numpy()).squeeze().long()#.to(device)
 
     train = DataLoader(list(zip(X_train, y_train)), batch_size=BATCH_SIZE, shuffle=True)
 
-    network = MultiLayerNetwork(IN_SZ, H_SZ, OUT_SZ, LAYERS, DROPOUT_PROB).to(device)
+    network = MultiLayerNetwork(IN_SZ, H_SZ, OUT_SZ, LAYERS, DROPOUT_PROB)#.to(device)
 
     for epoch in range(EPOCHS):
         print(f"\nEpoch {epoch}")
@@ -81,8 +87,8 @@ def main():
     # Test model
     network.eval() # Set to evaluation mode
     with torch.no_grad():
-        X_test_tensor = torch.FloatTensor(X_test_df.values).to(device)
-        y_test_tensor = torch.LongTensor(y_test_df.values.ravel()).to(device)
+        X_test_tensor = torch.FloatTensor(X_test_df.values)#.to(device)
+        y_test_tensor = torch.LongTensor(y_test_df.values.ravel())#.to(device)
         
         test_logits = network(X_test_tensor)
         test_probs = F.softmax(test_logits, dim=-1)
