@@ -215,6 +215,7 @@ def add_prev_game_stats(games, batter_stats, pitcher_stats, prev_batter_games, p
 
 
 def main():
+    # Place the years we care about
     years = [2014, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024]
     
     for year in years:
