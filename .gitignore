@@ -1,1 +1,13 @@
+*
 data/
+data_162/
+data_162_g/
+data_162_games/
+data_average/
+reporting.ipynb
+!.gitignore      # Always track the .gitignore file itself
+!create_training_data.py  # Track 'specific_file.txt'
+!data_preprocess.py  # Track 'specific_file.txt'
+!logistic_regression.py
+!neural_network_v3.py
+

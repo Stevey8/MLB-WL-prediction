@@ -1,18 +1,7 @@
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
-import pybaseball
-from pybaseball import statcast
-pybaseball.cache.enable()
-
 import pandas as pd 
 import numpy as np 
-import matplotlib.pyplot as plt 
-import seaborn as sns
 
-def get_pitch_level_data(start, end):
-    df = statcast(start_dt=start,end_dt=end).iloc[::-1].reset_index(drop=True)
-    return df
+
 
 def get_game_level_data(df):
     data_without_batters = df.groupby('game_pk').apply(lambda group: pd.Series({
@@ -178,18 +167,8 @@ def add_prev_game_stats(games, batter_stats, pitcher_stats, prev_batter_games, p
 
     games.drop(columns=['team', 'date_home_batter','team_away_batter', 'date_away_batter','team_home_pitcher', 'date_home_pitcher', 'pitcher','team_away_pitcher', 'date_away_pitcher', 'pitcher_away_pitcher','away_starting_pitcher', 'home_starting_pitcher'], inplace=True)
     
-    games.rename(columns={
-        "prev_1_game_pk":"prev_1_game_pk_home_batter",
-        "prev_2_game_pk":"prev_2_game_pk_home_batter",
-        "prev_3_game_pk":"prev_3_game_pk_home_batter",
-        "prev_4_game_pk":"prev_4_game_pk_home_batter",
-        "prev_5_game_pk":"prev_5_game_pk_home_batter",
-        "prev_6_game_pk":"prev_6_game_pk_home_batter",
-        "prev_7_game_pk":"prev_7_game_pk_home_batter",
-        "prev_8_game_pk":"prev_8_game_pk_home_batter",
-        "prev_9_game_pk":"prev_9_game_pk_home_batter",
-        "prev_10_game_pk":"prev_10_game_pk_home_batter"}
-        , inplace=True)
+    rename_dict = {f"prev_{i+1}_game_pk": f"prev_{i+1}_game_pk_home_batter" for i in range(N)}
+    games.rename(columns=rename_dict, inplace=True)
 
     for i in range(N):
         home_team_col = f"prev_{i+1}_game_pk_home_batter"
@@ -216,23 +195,24 @@ def add_prev_game_stats(games, batter_stats, pitcher_stats, prev_batter_games, p
 
 def main():
     # Place the years we care about
-    years = [2014, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024]
-    
+    N = 162
+    years = [2022]
+    data_dir = "data_162/data_162_games"
     for year in years:
         print(f"Processing year {year}")
-        game_batter_data = pd.read_csv(f"data/df_{year}_game_info.csv")
+        game_batter_data = pd.read_csv(f"{data_dir}/df_{year}_game_info.csv")
 
-        prev_batter_games = get_previous_n_batter_games(game_batter_data, 10, save_file = False)
-        prev_pitcher_games = get_previous_n_pitcher_games(game_batter_data, 10, save_file = False)
+        prev_batter_games = get_previous_n_batter_games(game_batter_data, N, save_file = False)
+        prev_pitcher_games = get_previous_n_pitcher_games(game_batter_data, N, save_file = False)
 
-        batter_data = pd.read_csv(f"data/df_{year}_batting_stats.csv")
-        pitcher_data = pd.read_csv(f"data/df_{year}_pitching_stats.csv")
+        batter_data = pd.read_csv(f"{data_dir}/df_{year}_batting_stats.csv")
+        pitcher_data = pd.read_csv(f"{data_dir}/df_{year}_pitching_stats.csv")
         pitcher_data.rename(columns = {'is_home': 'is-host','n_pitches': 'n-pitches'}, inplace = True)
 
 
-        games_with_hist_stats = add_prev_game_stats(game_batter_data, batter_data, pitcher_data, prev_batter_games, prev_pitcher_games, 10)
+        games_with_hist_stats = add_prev_game_stats(game_batter_data, batter_data, pitcher_data, prev_batter_games, prev_pitcher_games, N)
         print(f"Saving data for year {year}")
-        games_with_hist_stats.to_csv(f"data/games_with_hist_stats_{year}.csv", index = False)
+        games_with_hist_stats.to_csv(f"{data_dir}/games_with_hist162_stats_{year}.csv", index = False)
 
 if __name__ == "__main__":
     main()
